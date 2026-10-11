@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Access\Permission;
+use App\Enums\Access\RoleName;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,11 +37,19 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+                'roles' => $user?->getRoleNames()->values()->all() ?? [],
+                'permissions' => $user === null
+                    ? []
+                    : ($user->hasRole(RoleName::SystemSuperAdministrator->value)
+                        ? Permission::values()
+                        : $user->getAllPermissions()->pluck('name')->values()->all()),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

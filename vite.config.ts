@@ -28,6 +28,10 @@ export default defineConfig({
             formVariants: true,
         }),
     ]),
+    test: {
+        include: ['resources/js/**/*.test.ts'],
+        environment: 'node',
+    },
     server: {
         watch: {
             ignored: [

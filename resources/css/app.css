@@ -141,3 +141,55 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* Sanitised rich text from the server (posts, events, pages). */
+@layer components {
+    .rich-text {
+        @apply space-y-4 leading-relaxed text-foreground;
+    }
+
+    .rich-text h2 {
+        @apply mt-8 text-xl font-semibold tracking-tight;
+    }
+
+    .rich-text h3 {
+        @apply mt-6 text-lg font-semibold;
+    }
+
+    .rich-text h4 {
+        @apply mt-4 font-semibold;
+    }
+
+    .rich-text a {
+        @apply font-medium underline underline-offset-4;
+    }
+
+    .rich-text ul {
+        @apply list-disc space-y-1 pl-6;
+    }
+
+    .rich-text ol {
+        @apply list-decimal space-y-1 pl-6;
+    }
+
+    .rich-text blockquote {
+        @apply border-l-4 pl-4 text-muted-foreground italic;
+    }
+
+    .rich-text code {
+        @apply rounded bg-muted px-1 py-0.5 text-sm;
+    }
+
+    .rich-text pre {
+        @apply overflow-x-auto rounded-md bg-muted p-4 text-sm;
+    }
+
+    .rich-text table {
+        @apply w-full border-collapse text-sm;
+    }
+
+    .rich-text th,
+    .rich-text td {
+        @apply border px-2 py-1 text-left;
+    }
+}

@@ -1,6 +1,18 @@
 <?php
 
+use App\Enums\Access\RoleName;
+use App\Models\Geography\Block;
+use App\Models\Geography\Clan;
+use App\Models\Geography\Community;
+use App\Models\Geography\County;
+use App\Models\Geography\District;
+use App\Models\Geography\GeoArea;
+use App\Models\Geography\Town;
+use App\Models\User;
+use App\Services\Geography\GeoAreaResolver;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /*
@@ -44,7 +56,51 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Seed the permission catalogue and role bundles once per test.
+ */
+function seedRoles(): void
 {
-    // ..
+    if (Role::query()->doesntExist()) {
+        test()->seed(RolesAndPermissionsSeeder::class);
+    }
+}
+
+/**
+ * A verified, active staff member holding one role, optionally restricted to an area.
+ */
+function staffUser(RoleName $role, ?GeoArea $scope = null, bool $strongAuth = true): User
+{
+    seedRoles();
+
+    $user = User::factory()
+        ->when($strongAuth, fn ($factory) => $factory->withTwoFactor())
+        ->create();
+    $user->assignRole($role->value);
+
+    if ($scope !== null) {
+        $user->geoScopes()->create(app(GeoAreaResolver::class)->fullPath($scope));
+    }
+
+    return $user;
+}
+
+/**
+ * A complete county → block chain of development fixtures.
+ *
+ * @return array{county: County, district: District, clan: Clan, town: Town, community: Community, block: Block}
+ */
+function geoChain(): array
+{
+    $block = Block::factory()->create();
+    $block->load(Block::ancestorRelations());
+
+    return [
+        'county' => $block->county,
+        'district' => $block->district,
+        'clan' => $block->clan,
+        'town' => $block->town,
+        'community' => $block->community,
+        'block' => $block,
+    ];
 }

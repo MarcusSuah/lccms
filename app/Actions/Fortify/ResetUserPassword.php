@@ -24,6 +24,14 @@ class ResetUserPassword implements ResetsUserPasswords
 
         $user->forceFill([
             'password' => $input['password'],
-        ])->save();
+        ]);
+
+        // Completing a reset proves control of the mailbox, which is how
+        // administrator-invited staff verify their address.
+        if ($user->email_verified_at === null) {
+            $user->forceFill(['email_verified_at' => now()]);
+        }
+
+        $user->save();
     }
 }

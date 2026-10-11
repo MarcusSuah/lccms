@@ -2,24 +2,25 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
+     *
+     * Production receives roles and permissions only. Development fixtures are
+     * labelled DEV- and are never official administrative data.
+     *
+     * Model events stay enabled: geographic models derive normalized names
+     * and slugs in their saving hooks, and seeded records should be audited.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call([RolesAndPermissionsSeeder::class, ReferenceDataSeeder::class]);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        if (! app()->isProduction()) {
+            $this->call(DevelopmentFixturesSeeder::class);
+        }
     }
 }

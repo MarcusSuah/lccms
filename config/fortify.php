@@ -161,9 +161,11 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Public self-registration is disabled: staff accounts are created by administrators.
         Features::resetPasswords(),
         Features::emailVerification(),
+        // Routes stay registered so the frontend build is stable; whether these are
+        // offered and enforced follows LCCMS_STRONG_AUTHENTICATION (config/lccms.php).
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,

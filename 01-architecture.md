@@ -2,18 +2,18 @@
 
 ## 1. Environment findings (verified in `C:\projects\lccms`, 2026-10-11)
 
-| Item | Found | Status |
-|---|---|---|
-| PHP | 8.4.25 (Windows, ZTS); bcmath, gd, intl, fileinfo, pdo_mysql, openssl loaded | OK for Laravel 13 |
-| Laravel | 13.35.0 | OK |
-| MySQL | server reports `26.7.0`, `lccms` schema holds only the 17 starter tables (all empty) | OK (≥ 8) |
-| Node / npm / pnpm | 24.20 / 12.2 / 11.25 | OK |
-| Inertia | inertia-laravel 3.5.1, @inertiajs/react 3.9.1 | OK |
-| React / TS | 19.2 / 5.7, React Compiler enabled, vite-plus (`vp`) toolchain | OK |
-| Auth | Fortify 1.41 starter kit: login, registration, email verification, password reset, TOTP 2FA, passkeys | Reuse |
+| Item                    | Found                                                                                                                                                                                                                                                                                              | Status                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| PHP                     | 8.4.25 (Windows, ZTS); bcmath, gd, intl, fileinfo, pdo_mysql, openssl loaded                                                                                                                                                                                                                       | OK for Laravel 13                             |
+| Laravel                 | 13.35.0                                                                                                                                                                                                                                                                                            | OK                                            |
+| MySQL                   | server reports `26.7.0`, `lccms` schema holds only the 17 starter tables (all empty)                                                                                                                                                                                                               | OK (≥ 8)                                      |
+| Node / npm / pnpm       | 24.20 / 12.2 / 11.25                                                                                                                                                                                                                                                                               | OK                                            |
+| Inertia                 | inertia-laravel 3.5.1, @inertiajs/react 3.9.1                                                                                                                                                                                                                                                      | OK                                            |
+| React / TS              | 19.2 / 5.7, React Compiler enabled, vite-plus (`vp`) toolchain                                                                                                                                                                                                                                     | OK                                            |
+| Auth                    | Fortify 1.41 starter kit: login, registration, email verification, password reset, TOTP 2FA, passkeys                                                                                                                                                                                              | Reuse                                         |
 | Installed, not yet used | spatie/laravel-permission 8.3, spatie/laravel-activitylog 5.1, spatie/laravel-honeypot, sanctum 4.3, maatwebsite/excel 4, barryvdh/laravel-dompdf 3, intervention/image-laravel 4, dexie 4, leaflet + react-leaflet 5, recharts 3, @tanstack/react-table, react-hook-form + zod 4, vite-plugin-pwa | Reuse, no new installs needed for most phases |
-| Baseline tests | 40 passed (Pest 5) | OK |
-| Baseline `tsc --noEmit` | 3 errors in generated `resources/js/actions/Illuminate/Routing/RedirectController.ts` | Pre-existing, see §3 |
+| Baseline tests          | 40 passed (Pest 5)                                                                                                                                                                                                                                                                                 | OK                                            |
+| Baseline `tsc --noEmit` | 3 errors in generated `resources/js/actions/Illuminate/Routing/RedirectController.ts`                                                                                                                                                                                                              | Pre-existing, see §3                          |
 
 Note: `sodium` and `exif` are not loaded in this PHP build. Neither is required. EXIF stripping is done by re-encoding through Intervention/GD.
 
@@ -43,10 +43,11 @@ County → District → Clan → Town → Community → Block → House → Hous
 - **Names.** Names are unique per parent on a normalised name: `UNIQUE(parent_id, normalized_name)`. Fuzzy duplicate detection (Soundex plus Levenshtein on `normalized_name`) flags likely duplicates for review instead of blocking.
 - **Reference codes.** Codes are server-generated, human-readable and immutable. Offline-created records also carry a client `uuid`.
 - **Reassignment workflow.** `geo_reassignments` covers request → authorised approval → apply in one transaction → activity log. The record stores the before and after ancestor paths and the effective date.
-- **Historical preservation.** Census rows (`households`, `occupants`, `house_enumerations`) carry their own ancestor columns. A reassignment updates the live register (`houses`, geography) and rows in *open* campaigns. It never touches rows of `closed`/`archived` campaigns, so their ancestor columns stay frozen and approved results never shift. No separate JSON snapshot is needed.
+- **Historical preservation.** Census rows (`households`, `occupants`, `house_enumerations`) carry their own ancestor columns. A reassignment updates the live register (`houses`, geography) and rows in _open_ campaigns. It never touches rows of `closed`/`archived` campaigns, so their ancestor columns stay frozen and approved results never shift. No separate JSON snapshot is needed.
 - **Development fixtures.** No official Liberian records are invented. Seeders create fixtures marked `is_fixture = true`, with reference codes prefixed `DEV-`, and a guard refuses to seed fixtures when `APP_ENV=production`.
 
 House vs household vs occupant:
+
 - `houses` is the stable physical register. It is campaign-independent.
 - `house_enumerations` holds the per-campaign visit and status of a house.
 - `households` is a social unit in one house **for one campaign**. A house can have many.
@@ -181,6 +182,7 @@ erDiagram
 ```
 
 Relationships in words:
+
 - A household belongs to one house and one campaign. The same physical house appears across campaigns through `house_enumerations`, while `houses` stays the single register entry. A new campaign creates new household and occupant rows, so earlier campaigns are never overwritten.
 - An occupant belongs to one household. The composite FK `(household_id, campaign_id) → households(id, campaign_id)` makes a campaign mismatch impossible.
 - The household head is derived from `relationship_to_head = 'head'`. A generated column with a unique index allows at most one head per household. There is no circular `head_occupant_id` FK.
@@ -189,32 +191,32 @@ Relationships in words:
 
 ## 6. Code layout (standard Laravel folders, domain sub-namespaces)
 
-| Kind | Location |
-|---|---|
-| Models | `app/Models/{Geography,Census,Sync,Facilities,Leadership,Infrastructure,Content,Complaints,Access}/` |
-| Actions (single workflow step) | `app/Actions/{Geography,Census,Sync,…}/`, alongside the existing `app/Actions/Fortify` |
-| Services (cross-cutting queries) | `app/Services/{GeoScope,Reports,Sync,…}` |
-| Controllers | `app/Http/Controllers/{Admin,Public,Api/V1}/…` (thin) |
-| Form Requests / Resources | `app/Http/Requests/<Domain>/`, `app/Http/Resources/<Domain>/` |
-| Policies / Enums | `app/Policies/`, `app/Enums/<Domain>/` |
-| React pages | `resources/js/pages/{admin,public,field}/…` |
-| Offline client | `resources/js/offline/` (Dexie DB, crypto, outbox, sync engine) |
+| Kind                             | Location                                                                                             |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Models                           | `app/Models/{Geography,Census,Sync,Facilities,Leadership,Infrastructure,Content,Complaints,Access}/` |
+| Actions (single workflow step)   | `app/Actions/{Geography,Census,Sync,…}/`, alongside the existing `app/Actions/Fortify`               |
+| Services (cross-cutting queries) | `app/Services/{GeoScope,Reports,Sync,…}`                                                             |
+| Controllers                      | `app/Http/Controllers/{Admin,Public,Api/V1}/…` (thin)                                                |
+| Form Requests / Resources        | `app/Http/Requests/<Domain>/`, `app/Http/Resources/<Domain>/`                                        |
+| Policies / Enums                 | `app/Policies/`, `app/Enums/<Domain>/`                                                               |
+| React pages                      | `resources/js/pages/{admin,public,field}/…`                                                          |
+| Offline client                   | `resources/js/offline/` (Dexie DB, crypto, outbox, sync engine)                                      |
 
 `app/Services` and `app/Enums` would be new folders under `app/`, not new base folders. Cross-domain writes go through Actions.
 
 ## 7. Implementation sequence
 
-| Phase | Scope | Exit criteria |
-|---|---|---|
-| 2 Foundation | Wayfinder fix; roles and permissions seeder (15 roles); `user_geo_scopes` + `GeoScope` service + `GeoScoped` trait; activitylog redactor; staff-only registration (public sign-up disabled); admin layout and navigation; MySQL test DB | Auth, permission and scope tests pass; tsc clean; build OK |
-| 3 Geography | Six levels CRUD, cascading selectors, breadcrumbs, search, duplicate flags, CSV/XLSX import with preview, reassignment workflow | Hierarchy integrity and import tests |
-| 4 Census | Campaigns, assignments, houses, enumerations, households, occupants, review and approval, corrections, duplicate review, aggregate reports | Aggregation and history tests |
-| 5 Offline | PWA shell, encrypted Dexie store, package download, outbox, sync API, conflicts UI | The 8 acceptance scenarios (see 03) |
-| 6 Facilities and leadership | Facility register and profiles, inspections, service assessments, leadership tenures, infrastructure and projects | Classification and tenure tests |
-| 7 Public site | Home, community profiles, gallery, events, blog, about, contact | Redaction tests |
-| 8 Complaints | Submission, 5-image enforcement, tracking token, workflow | Upload security tests |
-| 9 Reports and maps | Dashboards, drill-down, exports (CSV/XLSX/PDF), comparisons, Leaflet maps | Export permission tests |
-| 10 Hardening | Security review, performance, backup and restore runbook, deployment docs | Full suite and build |
+| Phase                       | Scope                                                                                                                                                                                                                                   | Exit criteria                                              |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| 2 Foundation                | Wayfinder fix; roles and permissions seeder (15 roles); `user_geo_scopes` + `GeoScope` service + `GeoScoped` trait; activitylog redactor; staff-only registration (public sign-up disabled); admin layout and navigation; MySQL test DB | Auth, permission and scope tests pass; tsc clean; build OK |
+| 3 Geography                 | Six levels CRUD, cascading selectors, breadcrumbs, search, duplicate flags, CSV/XLSX import with preview, reassignment workflow                                                                                                         | Hierarchy integrity and import tests                       |
+| 4 Census                    | Campaigns, assignments, houses, enumerations, households, occupants, review and approval, corrections, duplicate review, aggregate reports                                                                                              | Aggregation and history tests                              |
+| 5 Offline                   | PWA shell, encrypted Dexie store, package download, outbox, sync API, conflicts UI                                                                                                                                                      | The 8 acceptance scenarios (see 03)                        |
+| 6 Facilities and leadership | Facility register and profiles, inspections, service assessments, leadership tenures, infrastructure and projects                                                                                                                       | Classification and tenure tests                            |
+| 7 Public site               | Home, community profiles, gallery, events, blog, about, contact                                                                                                                                                                         | Redaction tests                                            |
+| 8 Complaints                | Submission, 5-image enforcement, tracking token, workflow                                                                                                                                                                               | Upload security tests                                      |
+| 9 Reports and maps          | Dashboards, drill-down, exports (CSV/XLSX/PDF), comparisons, Leaflet maps                                                                                                                                                               | Export permission tests                                    |
+| 10 Hardening                | Security review, performance, backup and restore runbook, deployment docs                                                                                                                                                               | Full suite and build                                       |
 
 ## 8. Decisions needed before Phase 2
 

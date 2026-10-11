@@ -47,6 +47,17 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the account has been deactivated by an administrator.
+     */
+    public function deactivated(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+            'deactivated_at' => now(),
+        ]);
+    }
+
+    /**
      * Indicate that the model has two-factor authentication configured.
      */
     public function withTwoFactor(): static

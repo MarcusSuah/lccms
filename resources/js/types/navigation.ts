@@ -11,4 +11,8 @@ export type NavItem = {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
+    /** Path prefix that marks this item active, when broader than href. */
+    match?: string;
+    /** Shown only when the user holds any of these permissions. */
+    permissions?: string[];
 };

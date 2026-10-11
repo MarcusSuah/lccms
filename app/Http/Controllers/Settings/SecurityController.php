@@ -18,10 +18,14 @@ class SecurityController extends Controller
      */
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
+        $strongAuthentication = (bool) config('lccms.security.strong_authentication');
+        $canManageTwoFactor = $strongAuthentication && Features::canManageTwoFactorAuthentication();
+        $canManagePasskeys = $strongAuthentication && Features::canManagePasskeys();
+
         $props = [
-            'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
-            'canManagePasskeys' => Features::canManagePasskeys(),
-            'passkeys' => Features::canManagePasskeys()
+            'canManageTwoFactor' => $canManageTwoFactor,
+            'canManagePasskeys' => $canManagePasskeys,
+            'passkeys' => $canManagePasskeys
                 ? $request->user()
                     ->passkeys()
                     ->select(['id', 'name', 'credential', 'created_at', 'last_used_at'])
@@ -40,7 +44,7 @@ class SecurityController extends Controller
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ];
 
-        if (Features::canManageTwoFactorAuthentication()) {
+        if ($canManageTwoFactor) {
             $request->ensureStateIsValid();
 
             $props['twoFactorEnabled'] = $request->user()->hasEnabledTwoFactorAuthentication();
