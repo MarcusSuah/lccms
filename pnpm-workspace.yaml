@@ -1,0 +1,8 @@
+packages:
+  - '.'
+
+minimumReleaseAgeExclude:
+  - react-hook-form@7.90.0
+
+publicHoistPattern:
+  - '@inertiajs/core'
